@@ -2,6 +2,7 @@ from googlesearch import search
 from bs4 import BeautifulSoup
 import requests
 from urllib.parse import urlparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def check_valid_url(url):
     """
@@ -18,12 +19,11 @@ def check_valid_url(url):
             soup = BeautifulSoup(res.text, 'html.parser')
             title = soup.find('title')
             if any(keyword in title.text.lower() for keyword in ['free', 'stream', 'online', 'tv', 'series']):
-                return True
-        return False
+                return url
+        return None
     except:
-        return False
+        return None
 
-# TODO: Parallelize
 def search_anime(anime_name, num):
     """
     Given an anime name, search for websites that could be used to stream that anime online for free.
@@ -33,11 +33,18 @@ def search_anime(anime_name, num):
     """
     urls = search(f'{anime_name} free online stream', stop = num)
     op = []
-    for url in urls:
-        base = urlparse(url)
-        base_url = base.scheme + '://' + base.netloc
-        if base_url not in op and check_valid_url(base_url):
-            op.append(base_url)
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = []
+        for url in urls:
+            base = urlparse(url)
+            base_url = base.scheme + '://' + base.netloc
+            futures.append(executor.submit(check_valid_url, base_url))
+
+        for future in as_completed(futures):
+            result = future.result()
+            if result and result not in op:
+                op.append(result)
+
     return op
 
 
@@ -47,3 +54,5 @@ if __name__ == '__main__':
     potential_urls = search_anime(anime, num)
     for url in potential_urls:
         print(url)
+    
+    print(f'Total URLs found: {len(potential_urls)} out of {num} searches')
