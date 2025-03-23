@@ -5,10 +5,11 @@ from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def check_valid_url(url):
-    """
-    Given a URL, check if it is a valid URL that can be crawled and has keywords that suggest it is a free online streaming site.
+
+    """Check if a given URL is valid and contains the keywords for streaming anime
+
     :param url: URL to check
-    :return: True if valid, False otherwise
+    :return: URL if valid, None otherwise
     """
     try:
         headers = {
